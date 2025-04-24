@@ -73,6 +73,44 @@ def grad_desc_mse(K, ws, learning_eps, loss_fn, grad_loss_fn, verbose=False):
         history.append(loss_fn(ws))
     return ws, history
 
+
+def plot3d(f, A, B, show_colorbar=True):
+    """
+    Plots a 3D surface of function f(x1, x2) over meshgrid A, B with MATLAB-like orientation.
+    
+    Parameters:
+    - f: function of (x1, x2)
+    - A, B: meshgrid arrays
+    - show_colorbar: whether to display the color bar
+    """
+    Z = f(A, B)
+
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+
+    # Plot surface
+    surf = ax.plot_surface(A, B, Z, cmap='viridis', edgecolor='k')
+
+    # Set axes labels
+    ax.set_xlabel('x1')
+    ax.set_ylabel('x2')
+    ax.set_zlabel('f(x1, x2)')
+
+    # Set viewing angle: azim=-135, elev=30 gives MATLAB-style view with (0,0) front left
+    ax.view_init(elev=30, azim=-135)
+
+    # Add tighter colorbar
+    if show_colorbar:
+        # Create colorbar next to the plot (adjust size and position)
+        mappable = plt.cm.ScalarMappable(cmap='viridis')
+        mappable.set_array(Z)
+        fig.colorbar(mappable, ax=ax, shrink=0.6, pad=0.1)
+
+    # Clean layout
+    plt.title('3D Surface Plot')
+    plt.tight_layout()
+    plt.show()
+
 def plot3d_(f, A, B, show_colorbar=True):
     """
     Plots a 3D surface of function f(x1, x2) over meshgrid A, B with MATLAB-like orientation.
@@ -190,6 +228,23 @@ def d_relu(x):
     return (x > 0).astype(float)
 
 
+def init_single_neuron_ws(input_size=2, seed=None):
+    """
+    Xavier initialization for a single neuron:
+    - input_size: number of input features (e.g., 2 for XOR)
+    - returns: weights and bias in shape (input_size + 1, 1)
+    """
+    if seed is not None:
+        np.random.seed(seed)
+
+    output_size = 1  # single neuron output
+    limit = np.sqrt(6 / (input_size + output_size))
+
+    weights = [np.random.rand() * 2 * limit - limit for _ in range(input_size)]
+    bias = 0.0
+    ws0 = np.array(weights + [bias]).reshape(-1, 1)  # shape: (input_size + 1, 1)
+
+    return ws0
 
 def plot_history(history, title="Training History"):
     """
