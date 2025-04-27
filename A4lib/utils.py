@@ -109,7 +109,10 @@ def grad_desc_rss3e(K, a0, b0, alpha0, learning_eps, f_orig, f, ff, verbose=Fals
     
     # Print final gradient for debugging
     grad_w = ff(a_history[K], b_history[K], alpha_history[K])
-    print("Final gradient:", grad_w)
+    print("Final gradient:")
+    print(f"  ∂L/∂a      = {grad_w[0]:.6f}")
+    print(f"  ∂L/∂b      = {grad_w[1]:.6f}")
+    print(f"  ∂L/∂α      = {grad_w[2]:.6f}")
     
     # Define final function with the learned alpha
     f_final = lambda a, b: f(a, b, alpha_history[K])
@@ -228,7 +231,11 @@ def grad_desc_rss3(K, a0, b0, alpha0, s0, learning_eps, f_orig, f, ff, verbose=F
     
     # Print final gradient for debugging
     grad_w = ff(a_history[K], b_history[K], alpha_history[K], s_history[K])
-    print("Final gradient:", grad_w)
+    print("Final gradient:")
+    print(f"  ∂L/∂a      = {grad_w[0]:.6f}")
+    print(f"  ∂L/∂b      = {grad_w[1]:.6f}")
+    print(f"  ∂L/∂α      = {grad_w[2]:.6f}")
+    print(f"  ∂L/∂s      = {grad_w[3]:.6f}")
     
     # Define final function with the learned alpha and s
     f_final = lambda a, b: f(a, b, alpha_history[K], s_history[K])
