@@ -22,6 +22,238 @@ def grad_rss2(a, b, X, Y):
     grad_b = -2 * np.sum(Y - (a*X + b))
     return np.array([grad_a, grad_b])
 
+
+# Define gradient function for RSS with L2 norm equality constraint
+def grad_rss3e(a, b, alpha, c, X, Y):
+    """
+    Calculate the gradient of Lagrangian with L2 norm equality constraint.
+    
+    Parameters:
+    - a: slope parameter
+    - b: intercept parameter
+    - alpha: Lagrange multiplier
+    - c: constraint value (a^2 + b^2 = c)
+    - X: input features (1D array)
+    - Y: target values (1D array)
+    
+    Returns:
+    - numpy array [grad_a, grad_b, grad_alpha] with gradients
+    """
+    n = len(X)
+    grad_a = 0
+    grad_b = 0
+    
+    for i in range(n):
+        tmp = Y[i] - a * X[i] - b
+        grad_a += tmp * X[i]
+        grad_b += tmp
+    
+    grad_a = -2 * grad_a + 2 * alpha * a
+    grad_b = -2 * grad_b + 2 * alpha * b
+    grad_alpha = a**2 + b**2 - c
+    
+    return np.array([grad_a, grad_b, grad_alpha])
+
+
+# Define gradient descent function for L2 norm equality constraint
+def grad_desc_rss3e(K, a0, b0, alpha0, learning_eps, f_orig, f, ff, verbose=False):
+    """
+    Perform gradient descent for minimizing the Lagrangian with L2 norm equality constraint.
+    
+    Parameters:
+    - K: Number of iterations
+    - a0: Initial value for parameter a
+    - b0: Initial value for parameter b
+    - alpha0: Initial value for Lagrange multiplier alpha
+    - learning_eps: Learning rate (step size)
+    - f_orig: Original cost function without constraint
+    - f: Lagrangian function that includes constraint
+    - ff: Function that calculates the gradient of Lagrangian
+    - verbose: If True, print progress and create visualization
+    
+    Returns:
+    - a_history: Array of a values over iterations
+    - b_history: Array of b values over iterations
+    - alpha_history: Array of alpha values over iterations
+    """
+    # Initialize arrays to store parameters
+    a_history = np.zeros(K + 1)
+    b_history = np.zeros(K + 1)
+    alpha_history = np.zeros(K + 1)
+    
+    # Set initial values
+    a_history[0] = a0
+    b_history[0] = b0
+    alpha_history[0] = alpha0
+    
+    # For visualization if verbose
+    if verbose:
+        plt.figure(figsize=(8, 6))
+    
+    # Gradient descent loop
+    for k in range(K):
+        # Calculate gradient
+        grad_w = ff(a_history[k], b_history[k], alpha_history[k])
+        grad_a = grad_w[0]
+        grad_b = grad_w[1]
+        grad_alpha = grad_w[2]
+        
+        # Update parameters
+        a_history[k + 1] = a_history[k] - learning_eps * grad_a
+        b_history[k + 1] = b_history[k] - learning_eps * grad_b
+        alpha_history[k + 1] = alpha_history[k] - learning_eps * grad_alpha
+        
+        # Visualization in verbose mode
+        if verbose:
+            plt.plot([a_history[k], a_history[k+1]], [b_history[k], b_history[k+1]], 'b-')
+    
+    # Print final gradient for debugging
+    grad_w = ff(a_history[K], b_history[K], alpha_history[K])
+    print("Final gradient:", grad_w)
+    
+    # Define final function with the learned alpha
+    f_final = lambda a, b: f(a, b, alpha_history[K])
+    
+    # Final visualization if in verbose mode
+    if verbose:
+        # Find suitable axes ranges
+        a_low = min(min(a_history), a0-2)
+        a_high = max(max(a_history), a0+2)
+        b_low = min(min(b_history), b0-3)
+        b_high = max(max(b_history), b0+3)
+        
+        # Create meshgrid
+        a_vals = np.arange(a_low, a_high, 0.1)
+        b_vals = np.arange(b_low, b_high, 0.4)
+        A, B = np.meshgrid(a_vals, b_vals)
+        
+        # Plot contours of original function
+        
+        plot2d_contour(f_orig, A, B, show_colorbar=True, 
+                           mark_point=(a0, b0), show_path=True,
+                           a_history=a_history, b_history=b_history)
+        plt.show()
+    
+    return a_history, b_history, alpha_history
+
+def grad_rss3(a, b, alpha, s, c, X, Y):
+    """
+    Calculate the gradient of Lagrangian with L2 norm inequality constraint (using slack variable).
+    
+    Parameters:
+    - a: slope parameter
+    - b: intercept parameter
+    - alpha: Lagrange multiplier
+    - s: slack variable to turn inequality into equality constraint
+    - c: constraint value (a^2 + b^2 ≤ c becomes a^2 + b^2 + s^2 = c)
+    - X: input features (1D array)
+    - Y: target values (1D array)
+    
+    Returns:
+    - numpy array [grad_a, grad_b, grad_alpha, grad_s] with gradients
+    """
+    n = len(X)
+    grad_a = 0
+    grad_b = 0
+    
+    for i in range(n):
+        tmp = Y[i] - a * X[i] - b
+        grad_a += tmp * X[i]
+        grad_b += tmp
+    
+    grad_a = -2 * grad_a + 2 * alpha * a
+    grad_b = -2 * grad_b + 2 * alpha * b
+    grad_alpha = a**2 + b**2 - c + s**2
+    grad_s = 2 * alpha * s
+    
+    return np.array([grad_a, grad_b, grad_alpha, grad_s])
+
+
+def grad_desc_rss3(K, a0, b0, alpha0, s0, learning_eps, f_orig, f, ff, verbose=False):
+    """
+    Perform gradient descent for minimizing the Lagrangian with L2 norm inequality constraint.
+    
+    Parameters:
+    - K: Number of iterations
+    - a0: Initial value for parameter a
+    - b0: Initial value for parameter b
+    - alpha0: Initial value for Lagrange multiplier alpha
+    - s0: Initial value for slack variable s
+    - learning_eps: Learning rate (step size)
+    - f_orig: Original cost function without constraint
+    - f: Lagrangian function that includes constraint
+    - ff: Function that calculates the gradient of Lagrangian
+    - verbose: If True, print progress and create visualization
+    
+    Returns:
+    - a_history: Array of a values over iterations
+    - b_history: Array of b values over iterations
+    - alpha_history: Array of alpha values over iterations
+    - s_history: Array of slack variable values over iterations
+    """
+    # Initialize arrays to store parameters
+    a_history = np.zeros(K + 1)
+    b_history = np.zeros(K + 1)
+    alpha_history = np.zeros(K + 1)
+    s_history = np.zeros(K + 1)
+    
+    # Set initial values
+    a_history[0] = a0
+    b_history[0] = b0
+    alpha_history[0] = alpha0
+    s_history[0] = s0
+    
+    # For visualization if verbose
+    if verbose:
+        plt.figure(figsize=(8, 6))
+    
+    # Gradient descent loop
+    for k in range(K):
+        # Calculate gradient
+        grad_w = ff(a_history[k], b_history[k], alpha_history[k], s_history[k])
+        grad_a = grad_w[0]
+        grad_b = grad_w[1]
+        grad_alpha = grad_w[2]
+        grad_s = grad_w[3]
+        
+        # Update parameters
+        a_history[k + 1] = a_history[k] - learning_eps * grad_a
+        b_history[k + 1] = b_history[k] - learning_eps * grad_b
+        alpha_history[k + 1] = alpha_history[k] - learning_eps * grad_alpha
+        s_history[k + 1] = s_history[k] - learning_eps * grad_s
+        
+        # Visualization in verbose mode
+        if verbose and k % 50 == 0:  # Plot every 50 iterations to avoid overcrowding
+            plt.plot([a_history[k], a_history[k+1]], [b_history[k], b_history[k+1]], 'b-')
+    
+    # Print final gradient for debugging
+    grad_w = ff(a_history[K], b_history[K], alpha_history[K], s_history[K])
+    print("Final gradient:", grad_w)
+    
+    # Define final function with the learned alpha and s
+    f_final = lambda a, b: f(a, b, alpha_history[K], s_history[K])
+    
+    # Final visualization if in verbose mode
+    if verbose:
+        # Find suitable axes ranges
+        a_low = min(min(a_history), a0-2)
+        a_high = max(max(a_history), a0+2)
+        b_low = min(min(b_history), b0-3)
+        b_high = max(max(b_history), b0+3)
+        
+        # Create meshgrid
+        a_vals = np.arange(a_low, a_high, 0.1)
+        b_vals = np.arange(b_low, b_high, 0.4)
+        A, B = np.meshgrid(a_vals, b_vals)
+        
+        # Plot contours of original function
+        plot2d_contour(f_orig, A, B, show_colorbar=True, 
+                      mark_point=(a0, b0), show_path=True,
+                      a_history=a_history, b_history=b_history)
+        plt.show()
+    
+    return a_history, b_history, alpha_history, s_history
+
 def plot3d(f, A, B, show_colorbar=True):
     """
     Plots a 3D surface of function f(x1, x2) over meshgrid A, B with MATLAB-like orientation.
@@ -212,3 +444,5 @@ def plot2d_contour(f, A, B, show_colorbar=True, mark_point=None, levels=15, show
 
     # Return the figure and axes objects
     return fig, ax
+
+
