@@ -1,4 +1,5 @@
-
+import numpy as np
+import matplotlib.pyplot as plt
 
 def rss2(a, b, X, Y):
     # exactly sum of squared residuals
@@ -260,6 +261,29 @@ def grad_desc_rss3(K, a0, b0, alpha0, s0, learning_eps, f_orig, f, ff, verbose=F
         plt.show()
     
     return a_history, b_history, alpha_history, s_history
+
+def grad_rss4(a, b, alpha, s, c, X, Y):
+    """
+    Gradient function for L1 norm inequality constraint
+    """
+    n = len(X)
+    grad_a = 0
+    grad_b = 0
+    
+    # Calculate gradients component by component
+    for i in range(n):
+        tmp = Y[i] - a * X[i] - b
+        grad_a += tmp * X[i]
+        grad_b += tmp
+    
+    # Final gradient calculations with L1 terms
+    grad_a = -2 * grad_a + alpha * np.sign(a)
+    grad_b = -2 * grad_b + alpha * np.sign(b)
+    grad_alpha = abs(a) + abs(b) - c + s**2
+    grad_s = 2 * alpha * s
+    
+    # Return as a numpy array (equivalent to column vector in MATLAB)
+    return np.array([grad_a, grad_b, grad_alpha, grad_s])
 
 def plot3d(f, A, B, show_colorbar=True):
     """
